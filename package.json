@@ -1,6 +1,6 @@
 {
   "name": "getprofile",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "getprofile",
   "main": "index.js",
   "scripts": {
@@ -22,6 +22,5 @@
     "url": "https://github.com/nostrapps/getprofile/issues"
   },
   "homepage": "https://github.com/nostrapps/getprofile#readme",
-  "dependencies": {
-  }
+  "dependencies": {}
 }
