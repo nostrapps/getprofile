@@ -1,6 +1,6 @@
 {
   "name": "getprofile",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "getprofile",
   "main": "index.js",
   "scripts": {
