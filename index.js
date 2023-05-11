@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const { RelayPool } = require('nostr')
 const fs = require('fs')
 const path = require('path')
@@ -14,21 +16,21 @@ fs.mkdirSync(cacheDirectory, { recursive: true })
 // Create an object to store the merged data
 let mergedData = {}
 
-function parseEvent(event) {
-	if (event.kind === 0) {
-		const json = JSON.parse(event.content)
-		return json
-	} else if (event.kind === 3) {
-		const tags = event.tags
-		const contacts = []
-		tags.forEach(element => {
-			if (element[0] === 'p') {
-				contacts.push('nostr:pubkey:' + element[1])
-			}
-		})
-		const json = { relay: JSON.parse(event.content), following: contacts }
-		return json
-	}
+function parseEvent (event) {
+  if (event.kind === 0) {
+    const json = JSON.parse(event.content)
+    return json
+  } else if (event.kind === 3) {
+    const tags = event.tags
+    const contacts = []
+    tags.forEach(element => {
+      if (element[0] === 'p') {
+        contacts.push('nostr:pubkey:' + element[1])
+      }
+    })
+    const json = { relay: JSON.parse(event.content), following: contacts }
+    return json
+  }
 }
 
 const scsi = 'wss://nostr-pub.wellorder.net'
@@ -36,23 +38,23 @@ const relay = [scsi]
 
 const pool = RelayPool(relay)
 pool.on('open', relay => {
-	relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
+  relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
 })
 
 pool.on('event', (relay, sub_id, ev) => {
-	const parsedEvent = parseEvent(ev)
-	// Merge the parsed event into the mergedData object
-	mergedData = { ...mergedData, ...parsedEvent }
+  const parsedEvent = parseEvent(ev)
+  // Merge the parsed event into the mergedData object
+  mergedData = { ...mergedData, ...parsedEvent }
 
-	console.log(mergedData)
+  console.log(mergedData)
 
-	fs.writeFileSync(cacheFilePath, JSON.stringify({
-		'@id': '',
-		mainEntity: {
-			'@id': 'nostr:pubkey:' + user,
-			...mergedData
-		}
-	}, null, 2))
+  fs.writeFileSync(cacheFilePath, JSON.stringify({
+    '@id': '',
+    mainEntity: {
+      '@id': 'nostr:pubkey:' + user,
+      ...mergedData
+    }
+  }, null, 2))
 
-	relay.close()
+  relay.close()
 })
