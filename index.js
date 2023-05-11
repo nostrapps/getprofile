@@ -16,43 +16,45 @@ fs.mkdirSync(cacheDirectory, { recursive: true })
 // Create an object to store the merged data
 let mergedData = {}
 
-function parseEvent(event) {
-	if (event.kind === 0) {
-		const json = JSON.parse(event.content)
-		return json
-	} else if (event.kind === 3) {
-		const tags = event.tags
-		const contacts = []
-		tags.forEach(element => {
-			if (element[0] === 'p') {
-				contacts.push('nostr:pubkey:' + element[1])
-			}
-		})
+function parseEvent (event) {
+  if (event.kind === 0) {
+    const json = JSON.parse(event.content)
+    return json
+  } else if (event.kind === 3) {
+    const tags = event.tags
+    const contacts = []
+    tags.forEach(element => {
+      if (element[0] === 'p') {
+        contacts.push('nostr:pubkey:' + element[1])
+      }
+    })
 
-		function transformRelays(relays) {
-			return Object.entries(relays).map(([key, value]) => {
-				const modes = []
-				if (value.read) modes.push('read')
-				if (value.write) modes.push('write')
-				return {
-					'@id': key,
-					mode: modes
-				}
-			})
-		}
-		try {
-			let relays = JSON.parse(event.content)
-			relays = transformRelays(relays)
-		} catch (e) {
-		}
-		// console.log(relays)
+    function transformRelays (relays) {
+      return Object.entries(relays).map(([key, value]) => {
+        const modes = []
+        if (value.read) modes.push('read')
+        if (value.write) modes.push('write')
+        return {
+          '@id': key,
+          mode: modes
+        }
+      })
+    }
 
-		if (relays) {
-			return { following: contacts, relay: relays }
-		} else {
-			return { following: contacts }
-		}
-	}
+    let relays
+    try {
+      relays = JSON.parse(event.content)
+      relays = transformRelays(relays)
+    } catch (e) {
+    }
+    // console.log(relays)
+
+    if (relays) {
+      return { following: contacts, relay: relays }
+    } else {
+      return { following: contacts }
+    }
+  }
 }
 
 const scsi = 'wss://nostr-pub.wellorder.net'
@@ -60,23 +62,23 @@ const relay = [scsi]
 
 const pool = RelayPool(relay)
 pool.on('open', relay => {
-	relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
+  relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
 })
 
 pool.on('event', (relay, sub_id, ev) => {
-	const parsedEvent = parseEvent(ev)
-	// Merge the parsed event into the mergedData object
-	mergedData = { ...parsedEvent, ...mergedData }
+  const parsedEvent = parseEvent(ev)
+  // Merge the parsed event into the mergedData object
+  mergedData = { ...parsedEvent, ...mergedData }
 
-	console.log(mergedData)
+  console.log(mergedData)
 
-	fs.writeFileSync(cacheFilePath, JSON.stringify({
-		'@id': '',
-		mainEntity: {
-			'@id': 'nostr:pubkey:' + user,
-			...mergedData
-		}
-	}, null, 2))
+  fs.writeFileSync(cacheFilePath, JSON.stringify({
+    '@id': '',
+    mainEntity: {
+      '@id': 'nostr:pubkey:' + user,
+      ...mergedData
+    }
+  }, null, 2))
 
-	relay.close()
+  relay.close()
 })
