@@ -63,6 +63,10 @@ const relay = [scsi]
 const pool = RelayPool(relay)
 pool.on('open', relay => {
   relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
+  timeoutId = setTimeout(() => {
+    console.log('No event received within 5 seconds. Closing relay.')
+    relay.close()
+  }, 5000)
 })
 
 pool.on('event', (relay, sub_id, ev) => {
