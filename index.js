@@ -28,7 +28,23 @@ function parseEvent (event) {
         contacts.push('nostr:pubkey:' + element[1])
       }
     })
-    const json = { relay: JSON.parse(event.content), following: contacts }
+
+    function transformRelays (relays) {
+      return Object.entries(relays).map(([key, value]) => {
+        const modes = []
+        if (value.read) modes.push('read')
+        if (value.write) modes.push('write')
+        return {
+          '@id': key,
+          mode: modes
+        }
+      })
+    }
+    let relays = JSON.parse(event.content)
+    relays = transformRelays(relays)
+    // console.log(relays)
+
+    const json = { following: contacts, relay: relays }
     return json
   }
 }
@@ -44,7 +60,7 @@ pool.on('open', relay => {
 pool.on('event', (relay, sub_id, ev) => {
   const parsedEvent = parseEvent(ev)
   // Merge the parsed event into the mergedData object
-  mergedData = { ...mergedData, ...parsedEvent }
+  mergedData = { ...parsedEvent, ...mergedData }
 
   console.log(mergedData)
 
