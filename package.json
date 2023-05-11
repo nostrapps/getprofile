@@ -25,5 +25,9 @@
     "url": "https://github.com/nostrapps/getprofile/issues"
   },
   "homepage": "https://github.com/nostrapps/getprofile#readme",
-  "dependencies": {}
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "nostr": "^0.2.8",
+    "path": "^0.12.7"
+  }
 }
