@@ -4,14 +4,21 @@ const { RelayPool } = require('nostr')
 const fs = require('fs')
 const path = require('path')
 
-const user = process.argv[2] || 'de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645'
+// Get users from command line arguments
+const users = process.argv.slice(2)
+if (users.length === 0) {
+  users.push('de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645')
+}
 
 const root = './cache/.well-known/nostr/pubkey'
-const cacheDirectory = path.join(root, `${user}`)
-const filname = 'index.json'
-const cacheFilePath = path.join(cacheDirectory, filname)
 
-fs.mkdirSync(cacheDirectory, { recursive: true })
+users.forEach(user => {
+  const cacheDirectory = path.join(root, `${user}`)
+  const filename = 'index.json'
+  const cacheFilePath = path.join(cacheDirectory, filename)
+
+  fs.mkdirSync(cacheDirectory, { recursive: true })
+})
 
 // Create an object to store the merged data
 let mergedData = {}
@@ -57,19 +64,23 @@ function parseEvent (event) {
   }
 }
 
-const scsi = 'wss://nostr-pub.wellorder.net'
+const scsi = 'wss://relay.damus.io/'
 const relay = [scsi]
 
 const pool = RelayPool(relay)
 pool.on('open', relay => {
-  relay.subscribe('subid', { limit: 5, kinds: [0, 3], authors: [user] })
-  timeoutId = setTimeout(() => {
-    console.log('No event received within 5 seconds. Closing relay.')
-    relay.close()
-  }, 5000)
+  // Subscribe for each user
+  users.forEach(user => {
+    relay.subscribe('subid' + user, { limit: 5, kinds: [0, 3], authors: [user] })
+  })
 })
 
 pool.on('event', (relay, sub_id, ev) => {
+  const user = sub_id.slice(5) // Remove 'subid' prefix to get the user
+  const cacheDirectory = path.join(root, `${user}`)
+  const filename = 'index.json'
+  const cacheFilePath = path.join(cacheDirectory, filename)
+
   const parsedEvent = parseEvent(ev)
   // Merge the parsed event into the mergedData object
   mergedData = { ...parsedEvent, ...mergedData }
@@ -77,12 +88,28 @@ pool.on('event', (relay, sub_id, ev) => {
   console.log(mergedData)
 
   fs.writeFileSync(cacheFilePath, JSON.stringify({
+    '@context': 'http://schema.org',
     '@id': '',
+    '@type': 'Person',
+    name: mergedData.name,
+    image: mergedData.picture,
+    description: mergedData.about,
+
     mainEntity: {
+      '@context': 'https://w3id.org/nostr/context',
       '@id': 'nostr:pubkey:' + user,
       ...mergedData
     }
   }, null, 2))
 
-  relay.close()
+  // Remove user from the array
+  const index = users.indexOf(user)
+  if (index > -1) {
+    users.splice(index, 1)
+  }
+
+  // Close the relay if no more users
+  if (users.length === 0) {
+    relay.close()
+  }
 })
