@@ -112,4 +112,8 @@ pool.on('event', (relay, sub_id, ev) => {
   if (users.length === 0) {
     relay.close()
   }
+
+  setTimeout(() => {
+    relay.clos()
+  }, 3000)
 })
