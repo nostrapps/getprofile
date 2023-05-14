@@ -87,7 +87,7 @@ pool.on('event', (relay, sub_id, ev) => {
 
 	console.log(mergedData)
 
-	fs.writeFileSync(cacheFilePath, JSON.stringify({
+	const profile = {
 		'@context': 'http://schema.org',
 		'@id': '',
 		'@type': 'Person',
@@ -100,7 +100,17 @@ pool.on('event', (relay, sub_id, ev) => {
 			'@id': 'nostr:pubkey:' + user,
 			...mergedData
 		}
-	}, null, 2))
+	}
+
+	if (mergedData.github || mergedData.github) {
+		profile.mainEntity.github = mergedData.github
+	} else if (mergedData.Github) {
+		profile.mainEntity.github = mergedData.Github
+	} else if (mergedData.identities && mergedData.identities[0] && mergedData.identities[0].type === 'github') {
+		profile.mainEntity.github = 'https://github.com' + mergedData.identities[0].claim
+	}
+
+	fs.writeFileSync(cacheFilePath, JSON.stringify(profile, null, 2))
 
 	// Remove user from the array
 	const index = users.indexOf(user)
