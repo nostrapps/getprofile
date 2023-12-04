@@ -3,6 +3,7 @@
 const { RelayPool } = require('nostr')
 const fs = require('fs')
 const path = require('path')
+const util = require('util')
 
 // Get users from command line arguments
 const users = process.argv.slice(2)
@@ -85,7 +86,8 @@ pool.on('event', (relay, sub_id, ev) => {
 	// Merge the parsed event into the mergedData object
 	mergedData = { ...parsedEvent, ...mergedData }
 
-	console.log(mergedData)
+	// console.log(mergedData)
+	console.log(util.inspect(mergedData, { maxArrayLength: null }))
 
 	const profile = {
 		'@context': 'http://schema.org',
@@ -107,7 +109,7 @@ pool.on('event', (relay, sub_id, ev) => {
 	} else if (mergedData.Github) {
 		profile.mainEntity.github = mergedData.Github
 	} else if (mergedData.identities && mergedData.identities[0] && mergedData.identities[0].type === 'github') {
-		profile.mainEntity.github = 'https://github.com' + mergedData.identities[0].claim
+		profile.mainEntity.github = 'https://github.com/' + mergedData.identities[0].claim
 	}
 
 	fs.writeFileSync(cacheFilePath, JSON.stringify(profile, null, 2))
