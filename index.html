@@ -64,8 +64,18 @@
   </head>
   <body>
     <div class="container">
-      <input type="text" id="relayInput" placeholder="Enter Relay URL" />
-      <input type="text" id="pubKeyInput" placeholder="Enter PubKey" />
+      <input
+        type="text"
+        id="relayInput"
+        placeholder="Enter Relay URL"
+        value="wss://relay.damus.io"
+      />
+      <input
+        type="text"
+        id="pubKeyInput"
+        placeholder="Enter PubKey"
+        value="de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645"
+      />
       <button id="fetchButton">Fetch Profile</button>
       <pre id="result"></pre>
     </div>
