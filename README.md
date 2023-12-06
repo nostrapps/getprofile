@@ -55,7 +55,7 @@ node index.js
 By default, the script uses 'de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645' as the user. If you want to use a different user, pass the user's public key as a command line argument:
 
 ```bash
-node index.js <pubkey>
+node index.js <pubkey> <relay>
 ```
 
 This will create a new directory under the `./cache` directory named after the user's public key, and a JSON file named `index.json` in this directory. The JSON file will contain the parsed data from the fetched events.
@@ -66,17 +66,25 @@ The JSON file will have the following structure:
 
 ```json
 {
-  "@id": "",
-  "mainEntity": {
-    "@id": "nostr:pubkey:<pubkey>",
-    "name": "<user name>",
-    "picture": "<picture URL>",
-    "website": "<website URL>",
-    "about": "<user description>",
-    "display_name": "<display name>",
-    "relay": "<relay>",
-    "following": ["<following pubkeys>"]
-  }
+  '@context': 'https://w3id.org/nostr/context',
+  '@type': 'Profile',
+  '@id': 'nostr:pubkey:de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645',
+  mainEntityOfPage: '',
+  name: 'melvincarvalho',
+  image: 'https://void.cat/d/Eon6A2onyvTWGSseNkwQ4v.webp',
+  description: 'Mathematician and Web Developer',
+  picture: 'https://void.cat/d/Eon6A2onyvTWGSseNkwQ4v.webp',
+  website: 'https://melvincarvalho.com/',
+  nip05: '_@melvincarvalho.com',
+  about: 'Mathematician and Web Developer',
+  banner: 'https://void.cat/d/KhHoehWtdyXFjmDh1NxKWZ',
+  display_name: 'Melvin Carvalho',
+  lud16: 'melvincarvalho@ln.tips',
+  lud06: 'LNURL1DP68GURN8GHJ7MR9VAJKUEPWD3HXY6T5WVHXXMMD9AKXUATJD3CZ7ET9XFVR25S5W7VAN',
+  displayName: 'Melvin Carvalho',
+  pubkey: 'de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645',
+  npub: 'npub1melv683fw6n2mvhl5h6dhqd8mqfv3wmxnz4qph83ua4dk4006ezsrt5c24',
+  created_at: 1699085316
 }
 ```
 
