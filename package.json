@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.15",
   "description": "getprofile",
-  "main": "index.js",
+  "main": "bin/getprofile.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
