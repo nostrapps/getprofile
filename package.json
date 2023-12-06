@@ -1,7 +1,7 @@
 {
   "name": "getprofile",
   "type": "module",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "getprofile",
   "main": "index.js",
   "scripts": {
