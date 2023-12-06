@@ -1,131 +1,141 @@
 #!/usr/bin/env node
 
-const { RelayPool } = require('nostr')
-const fs = require('fs')
-const path = require('path')
-const util = require('util')
+import { RelayPool } from 'nostr'
+import fs from 'fs'
+import path from 'path'
+import util from 'util'
+import minimist from 'minimist'
+
+// Define default relay and user values
+const defaultRelay = 'wss://relay.damus.io'
+const defaultUser = 'de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645'
+
+// Parse command line arguments using minimist
+const args = minimist(process.argv.slice(2))
+
+// Extract users and relay from the arguments
+const usersArg = args._[0] || defaultUser
+const relayArg = args._[1] || defaultRelay
+
+// Handle comma-separated values
+const users = usersArg.includes(',') ? usersArg.split(',') : [usersArg]
+const relay = relayArg.includes(',') ? relayArg.split(',') : [relayArg]
+
+// Your script logic here
+// For example, you can log the obtained values
+// console.log(`Users: ${users.join(', ')}`)
+// console.log(`Relay: ${relay.join(', ')}`)
 
 // Get users from command line arguments
-const users = process.argv.slice(2)
 if (users.length === 0) {
-	users.push('de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645')
+  // console.log('No user provided as argument, using default.')
+  users.push('de7ecd1e2976a6adb2ffa5f4db81a7d812c8bb6698aa00dcf1e76adb55efd645')
 }
 
 const root = './cache/.well-known/nostr/pubkey'
 
+// console.log(`Processing users: ${users.join(', ')}`)
 users.forEach(user => {
-	const cacheDirectory = path.join(root, `${user}`)
-	const filename = 'index.json'
-	const cacheFilePath = path.join(cacheDirectory, filename)
+  const cacheDirectory = path.join(root, `${user}`)
+  const filename = 'index.json'
+  const cacheFilePath = path.join(cacheDirectory, filename)
 
-	fs.mkdirSync(cacheDirectory, { recursive: true })
+  // console.log(`Creating directory: ${cacheDirectory}`)
+  fs.mkdirSync(cacheDirectory, { recursive: true })
 })
 
 // Create an object to store the merged data
 let mergedData = {}
+const kind0Data = {}
+const kind3Data = {}
+const identityData = {}
 
 function parseEvent(event) {
-	if (event.kind === 0) {
-		const json = JSON.parse(event.content)
-		return json
-	} else if (event.kind === 3) {
-		const tags = event.tags
-		const contacts = []
-		tags.forEach(element => {
-			if (element[0] === 'p') {
-				contacts.push('nostr:pubkey:' + element[1])
-			}
-		})
+  // console.log(`Parsing event: ${event.id}`)
+  if (event.kind === 0) {
+    const json = JSON.parse(event.content)
+    // console.log(`Parsed profile data for ${event.pubkey}`)
+    return json
+  } else if (event.kind === 3) {
+    const tags = event.tags
+    const contacts = tags.filter(tag => tag[0] === 'p').map(tag => 'nostr:pubkey:' + tag[1])
+    // console.log(`Parsed ${contacts.length} contact(s) for ${event.pubkey}`)
 
-		function transformRelays(relays) {
-			return Object.entries(relays).map(([key, value]) => {
-				const modes = []
-				if (value.read) modes.push('read')
-				if (value.write) modes.push('write')
-				return {
-					'@id': key,
-					mode: modes
-				}
-			})
-		}
+    let relays = {}
+    try {
+      // console.log(event)
+      relays = JSON.parse(event.content || '{}')
 
-		let relays
-		try {
-			relays = JSON.parse(event.content)
-			relays = transformRelays(relays)
-		} catch (e) {
-		}
-		// console.log(relays)
+      // console.log(`Parsed relay data for ${event.pubkey}`)
+    } catch (e) {
+      // console.log(`Error parsing relay data for ${event.pubkey}: ${e.message}`)
+    }
 
-		if (relays) {
-			return { following: contacts, relay: relays }
-		} else {
-			return { following: contacts }
-		}
-	}
+    if (relays) {
+      return { following: contacts, relay: relays }
+    } else {
+      return { following: contacts }
+    }
+  }
 }
 
-const scsi = 'wss://relay.damus.io/'
-const relay = [scsi]
-
+// console.log(`Connecting to relay: ${scsi}`)
 const pool = RelayPool(relay)
 pool.on('open', relay => {
-	// Subscribe for each user
-	users.forEach(user => {
-		relay.subscribe('subid' + user, { limit: 5, kinds: [0, 3], authors: [user] })
-	})
+  // console.log('Connected to relay.')
+  // Subscribe for each user
+  users.forEach(user => {
+    // console.log(`Subscribing to events for user: ${user}`)
+    relay.subscribe('subid' + user, { limit: 2, kinds: [0], authors: [user] })
+  })
 })
 
 pool.on('event', (relay, sub_id, ev) => {
-	const user = sub_id.slice(5) // Remove 'subid' prefix to get the user
-	const cacheDirectory = path.join(root, `${user}`)
-	const filename = 'index.json'
-	const cacheFilePath = path.join(cacheDirectory, filename)
+  const user = sub_id.slice(5) // Remove 'subid' prefix to get the user
+  // console.log(`Received event for user: ${user}`)
+  const cacheDirectory = path.join(root, `${user}`)
+  const filename = 'index.json'
+  const cacheFilePath = path.join(cacheDirectory, filename)
 
-	const parsedEvent = parseEvent(ev)
-	// Merge the parsed event into the mergedData object
-	mergedData = { ...parsedEvent, ...mergedData }
+  const parsedEvent = parseEvent(ev)
+  // Merge the parsed event into the mergedData object
+  mergedData = { ...parsedEvent, ...mergedData }
 
-	// console.log(mergedData)
-	console.log(util.inspect(mergedData, { maxArrayLength: null }))
+  // Construct the profile object
+  const profile = {
+    '@context': 'https://w3id.org/nostr/context',
+    '@type': 'Profile',
+    '@id': 'nostr:pubkey:' + user,
+    mainEntityOfPage: '',
+    name: mergedData.name,
+    image: mergedData.picture,
+    description: mergedData.about,
+    ...mergedData
+  }
 
-	const profile = {
-		'@context': 'http://schema.org',
-		'@id': '',
-		'@type': 'Person',
-		name: mergedData.name,
-		image: mergedData.picture,
-		description: mergedData.about,
+  // console.log('Nostr Linked Data Profile: ')
+  // console.log('Relay: ', relay.url)
+  console.log(util.inspect(profile, { maxArrayLength: null }))
 
-		mainEntity: {
-			'@context': 'https://w3id.org/nostr/context',
-			'@id': 'nostr:pubkey:' + user,
-			...mergedData
-		}
-	}
+  // console.log(`Writing profile data to file: ${cacheFilePath}`)
+  fs.writeFileSync(cacheFilePath, JSON.stringify(profile, null, 2))
 
-	if (mergedData.github || mergedData.github) {
-		profile.mainEntity.github = mergedData.github
-	} else if (mergedData.Github) {
-		profile.mainEntity.github = mergedData.Github
-	} else if (mergedData.identities && mergedData.identities[0] && mergedData.identities[0].type === 'github') {
-		profile.mainEntity.github = 'https://github.com/' + mergedData.identities[0].claim
-	}
+  // Remove user from the array
+  const index = users.indexOf(user)
+  if (index > -1) {
+    // console.log(`Removing user from processing list: ${user}`)
+    users.splice(index, 1)
+  }
 
-	fs.writeFileSync(cacheFilePath, JSON.stringify(profile, null, 2))
+  // Close the relay if no more users
+  if (users.length === 0) {
+    // console.log('All users processed, closing relay.')
+    relay.close()
+  } else {
+    // console.log('Waiting for more events...')
+  }
+})
 
-	// Remove user from the array
-	const index = users.indexOf(user)
-	if (index > -1) {
-		users.splice(index, 1)
-	}
-
-	// Close the relay if no more users
-	if (users.length === 0) {
-		relay.close()
-	}
-
-	setTimeout(() => {
-		relay.close()
-	}, 3000)
+process.on('exit', () => {
+  // console.log('Script exiting.')
 })

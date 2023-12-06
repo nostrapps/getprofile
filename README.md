@@ -1,5 +1,3 @@
-
-
 <div align="center">  
   <h1>getprofile</h1>
 </div>
@@ -23,10 +21,11 @@
 
 # Nostr Event Fetcher
 
-This is a simple utility that subscribes to a Nostr relay, fetches events of specified kinds, and stores the parsed results in a JSON file. 
+This is a simple utility that subscribes to a Nostr relay, fetches events of specified kinds, and stores the parsed results in a JSON file.
 
 ## Features
-- Fetches and parses events from Nostr network 
+
+- Fetches and parses events from Nostr network
 - Writes the fetched data into a JSON file
 - Allows specifying event kinds to filter the events
 - Supports caching of fetched data for later use
@@ -109,5 +108,3 @@ Please make sure to update tests as appropriate.
 ## Contact
 
 If you have any questions or issues, please open an issue on this repository.
-
-

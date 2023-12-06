@@ -1,5 +1,6 @@
 {
   "name": "getprofile",
+  "type": "module",
   "version": "0.0.14",
   "description": "getprofile",
   "main": "index.js",
@@ -26,6 +27,7 @@
   "homepage": "https://github.com/nostrapps/getprofile#readme",
   "dependencies": {
     "fs": "^0.0.1-security",
+    "minimist": "^1.2.8",
     "nostr": "^0.2.8",
     "path": "^0.12.7",
     "util": "^0.12.5"
