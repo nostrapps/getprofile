@@ -1,45 +1,28 @@
-// library.js
 import { RelayPool } from 'nostr'
-import fs from 'fs'
-import path from 'path'
 import parseEvent from './functions.js'
 
-// Logging switch
-const LOGGING_ENABLED = false // Set to false to disable logging
+const LOGGING_ENABLED = false
 
-const root = './cache/.well-known/nostr/pubkey'
-
-/**
- * Custom logging function.
- * @param {...any} messages - Messages to log.
- */
 function log(...messages) {
   if (LOGGING_ENABLED) {
     console.log(...messages)
   }
 }
 
-/**
- * Process a list of users.
- * @param {string[]} users - Array of user identifiers.
- * @param {string[]} relay - Array of relay URLs.
- */
 export function processUsers(users, relay) {
   log('Processing users:', users)
-  ensureDirectories(users)
-  const pool = initializeRelayPool(relay, users)
-  handleRelayEvents(pool, users)
-}
-
-function ensureDirectories(users) {
-  users.forEach(user => {
-    const cacheDirectory = path.join(root, `${user}`)
-    log('Ensuring directory exists:', cacheDirectory)
-    fs.mkdirSync(cacheDirectory, { recursive: true })
+  return new Promise((resolve, reject) => {
+    try {
+      const pool = initializeRelayPool(relay, users, resolve, reject)
+      handleRelayEvents(pool, users, {}, resolve, reject) // Pass an empty object for accumulating profiles
+    } catch (error) {
+      log('Error in processUsers:', error)
+      reject(error)
+    }
   })
 }
 
-function initializeRelayPool(relay, users) {
+function initializeRelayPool(relay, users, resolve, reject) {
   log('Initializing Relay Pool')
   const pool = RelayPool(relay)
   pool.on('open', relay => {
@@ -52,20 +35,26 @@ function initializeRelayPool(relay, users) {
   return pool
 }
 
-function handleRelayEvents(pool, users) {
+function handleRelayEvents(pool, users, profiles, resolve, reject) {
   pool.on('event', (relay, sub_id, ev) => {
     log('Received event:', ev)
     const user = sub_id.slice(5)
     log('Handling event for user:', user)
-    const parsedEvent = parseEvent(ev)
-    log('Parsed event:', parsedEvent)
-    const profile = constructProfile(user, parsedEvent)
-    writeProfileToFile(user, profile)
-    console.log(profile)
-    updateUserList(users, user)
-    if (users.length === 0) {
-      log('All users processed, closing relay.')
-      relay.close()
+    try {
+      const parsedEvent = parseEvent(ev)
+      log('Parsed event:', parsedEvent)
+      const profile = constructProfile(user, parsedEvent)
+      profiles[user] = profile // Store the profile in the accumulator object
+
+      updateUserList(users, user)
+      if (users.length === 0) {
+        log('All users processed, closing relay.')
+        relay.close()
+        resolve(profiles) // Resolve the promise with the accumulated profiles
+      }
+    } catch (error) {
+      log('Error in handleRelayEvents:', error)
+      reject(error)
     }
   })
 }
@@ -78,13 +67,6 @@ function constructProfile(user, eventData) {
     '@id': 'nostr:pubkey:' + user,
     ...eventData
   }
-}
-
-function writeProfileToFile(user, profile) {
-  const cacheDirectory = path.join(root, `${user}`)
-  const cacheFilePath = path.join(cacheDirectory, 'index.json')
-  log('Writing profile to file:', cacheFilePath)
-  fs.writeFileSync(cacheFilePath, JSON.stringify(profile, null, 2))
 }
 
 function updateUserList(users, processedUser) {

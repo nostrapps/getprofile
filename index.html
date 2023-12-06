@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nostr Relay and PubKey Input</title>
+    <style>
+      /* Add your styles here */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      .container {
+        margin: auto;
+        width: 50%;
+        padding: 10px;
+      }
+
+      input,
+      button {
+        margin: 10px 0;
+        padding: 10px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <input type="text" id="relayInput" placeholder="Enter Relay URL" />
+      <input type="text" id="pubKeyInput" placeholder="Enter PubKey" />
+      <button id="fetchButton">Fetch Profile</button>
+      <pre id="result"></pre>
+    </div>
+
+    <script type="module">
+      import { processUsers } from './index.js' // Adjust the path as necessary
+
+      document.getElementById('fetchButton').addEventListener('click', () => {
+        const relay = document.getElementById('relayInput').value
+        const pubKey = document.getElementById('pubKeyInput').value
+
+        if (relay && pubKey) {
+          processUsers([pubKey], [relay])
+            .then(profiles => {
+              // Assuming profiles is an object where the key is the user ID and the value is their profile
+              const userProfile = profiles[pubKey] // Get the profile for the entered public key
+              document.getElementById('result').textContent = JSON.stringify(
+                userProfile,
+                null,
+                2
+              )
+            })
+            .catch(error => {
+              document.getElementById(
+                'result'
+              ).textContent = `Error: ${error.message}`
+            })
+        } else {
+          document.getElementById('result').textContent =
+            'Please enter both a relay URL and a pubkey.'
+        }
+      })
+    </script>
+  </body>
+</html>

@@ -18,5 +18,11 @@ const relayArg = args._[1] || defaultRelay
 const users = usersArg.includes(',') ? usersArg.split(',') : [usersArg]
 const relay = relayArg.includes(',') ? relayArg.split(',') : [relayArg]
 
-// Invoke the function from the library
+// Invoke the function from the library and handle the promise
 processUsers(users, relay)
+  .then(profiles => {
+    console.log(JSON.stringify(profiles, null, 2))
+  })
+  .catch(error => {
+    console.error('An error occurred:', error)
+  })
